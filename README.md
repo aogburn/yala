@@ -12,4 +12,4 @@ When run, yala will look for a new version to use and update itself with a simpl
 # usage
 
 * To run:
-> ./yatda.sh -f thread-dump-file-name
+> ./yala.sh server.log
