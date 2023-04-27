@@ -69,8 +69,8 @@ echo -en "${BLUE}"
 echo -e "*** First and last lines of $FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 {
-head -n 1 $FILE_NAME 
-tail -n 1 $FILE_NAME
+grep "[0-2][0-9]:[0-5][0-9]:[0-5][0-9]" $FILE_NAME | head -n 1
+grep "[0-2][0-9]:[0-5][0-9]:[0-5][0-9]" $FILE_NAME | tail -n 1
 echo
 }  | tee -a $DEST
 
