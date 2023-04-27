@@ -1,5 +1,5 @@
-md5sum yala.sh > md5
+md5sum yala.sh | awk '{ print $1 }' > md5
 tar -czvf yala-errors/ yala-errors.tar.xz
-md5sum yala-errors.tar.xz > tarmd5
+md5sum yala-errors.tar.xz | awk '{ print $1 }' > tarmd5
 
 

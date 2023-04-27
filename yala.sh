@@ -55,6 +55,7 @@ if [ "x$CHECK_UPDATE" = "x" ]; then
 fi
 
 #Summarize info
+echo
 echo -e "${RED}### Summarizing $FILE_NAME - see $DEST for more info and $ERROR_DEST for critical error suggestions ###${NC}"
 echo "### Summary of $FILE_NAME ###" > $DEST
 
