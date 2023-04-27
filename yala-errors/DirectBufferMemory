@@ -1,0 +1,19 @@
+java.lang.OutOfMemoryError: Direct buffer memory
+https://access.redhat.com/solutions/3266771
+I see you are receiving 'java.lang.OutOfMemoryError: Direct buffer memory' errors which indicates your direct buffer space is being exhausted.  This could just be a need for a direct buffer limit or a legitimate buffer leak.  In this OOME condition, the JVM may throw constant garbage collection, producing high CPU and virtually constant long pause times, yielding any applications the JVM is running unresponsive.
+
+You may consider increasing the -XX:MaxDirectMemorySize JVM option as memory allows for improvement if this is a simple need for more heap.  Note this increases memory used outside the configured JVM heap space.  Otherwise, we would need the following with your server log to further review for any buffer leaks:
+
+-Garbage collection logging, which you can enable as explained in https://access.redhat.com/solutions/18656
+
+-A heap dump, which you can capture as explained in https://access.redhat.com/solutions/21109.  We always recommend setting the -XX:+HeapDumpOnOutOfMemoryError JVM flag to create a heap dump automatically when an OOME occurs.  But note this OOME will require a manual dump,  which you can capture with your JDK's jmap command per https://access.redhat.com/solutions/21109#jmapjavaprocess:
+
+    jmap -dump:format=b,file=heap.hprof JAVA_PID
+
+
+Please compress the file and include the case number in the file name.  If the JVM is not responding to that as well in the issue time, please attempt it with the -F flag added:
+
+    jmap -F -dump:format=b,file=heap.hprof JAVA_PID
+
+
+Also, is this a newly deployed application, or has it been in production for some time and only recently this issue has appeared?  Have any changes been rolled out recently?  Are there any particular circumstances surrounding when the OutOfMemoryError happens?  For example, does it happen when specific functionality is executed (e.g. a file upload, a batch job, etc.), after a certain amount of time, under high load, etc?

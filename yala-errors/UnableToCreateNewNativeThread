@@ -1,0 +1,35 @@
+java.lang.OutOfMemoryError: unable to create new native thread
+https://access.redhat.com/solutions/18064
+I see you are receiving 'java.lang.OutOfMemoryError: unable to create new native thread' errors.  Essentially, this error occurs because the JVM is unable to create a new thread.  This causes unexpected failures and possible unresponsiveness from a failure to create new threads to process new tasks or requests.  This typically stems from the OS nproc limit being reached.  You may simply need to increase the user's nproc ulimit for your configuration and application requirements so if this is frequently recurring, you may consider increasing this limit first for possible improvement.
+
+If the nproc ulimit is already set sufficiently high, it'd help to see the following for further review:
+
+-your JBoss standalone or domain/host xmls
+
+-output of the following commands for the JBoss user:
+  $ ulimit -a
+  $ cat /proc/JBOSS_PID/limits > limits.out
+
+-output of the following at the issue time:
+
+  $ ps -eLf > ps.out
+
+-Corresponding JBoss server logs
+
+-GC logging from the time of the issue, which you can enable as explained in https://access.redhat.com/solutions/18656.
+
+-JBoss access logs.  Enable that like so with an access-log pattern like below in your undertow subsystem's host and ensure record-request-start-time is enabled on your undertow listeners, for example:
+
+    <server name="default-server">
+        <http-listener name="default" socket-binding="http" redirect-socket="https" record-request-start-time="true"/>
+        <host name="default-host" alias="localhost">
+            <location name="/" handler="welcome-content"/>
+            <access-log pattern="%h %l %u %t &quot;%r&quot; %s %b &quot;%{i,Referer}&quot; &quot;%{i,User-Agent}&quot; &quot;%{i,COOKIE}&quot; &quot;%{o,SET-COOKIE}&quot; %S &quot;%I&quot; %T"/>
+            <filter-ref name="server-header"/>
+            <filter-ref name="x-powered-by-header"/>
+        </host>
+    </server>
+
+-Thread dumps and CPU utilization data from the time of the issue.  These can be captured as described in https://access.redhat.com/solutions/46596.  Note it is best to capture several thread dumps over time to see any change or progression in the threads or lack thereof as well as CPU utilization data to see exactly which threads are using the CPU.  This article includes a script you can use to easily collect these thread dumps and CPU data together.  I'd recommend using the high_cpu_linux_jstack.sh here, which leverages your JDK's jstack command. 
+
+Please test the thread dump script beforehand in your environment to ensure it is operating correctly and collecting the necessary data before it is needed to collect the mentioned diagnostic information at the time of the issue.

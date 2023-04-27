@@ -1,0 +1,5 @@
+md5sum yala.sh > md5
+tar -czvf yala-errors/ yala-errors.tar.xz
+md5sum yala-errors.tar.xz > tarmd5
+
+

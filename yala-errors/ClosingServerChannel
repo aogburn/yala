@@ -1,0 +1,56 @@
+Exception accepting request, closing server channel TCP server.*: java.io.IOException: Too many open files
+https://access.redhat.com/solutions/3947061
+Your server log shows your server listener port died from a socket accept failure due to 'Too many open files' errors.  This is a known issue described by https://access.redhat.com/solutions/3947061 addressed in the latest EAP updates.  So the server became unresponsive due to this issue from reaching file limits and the resulting error killing the server port.
+
+We would highly recommended upgrading to EAP 7.4 and its latest CP update to get up to date on a current version that has these fixes and is eligible for continued bug and security vulnerability updates.  Note 7.4 is the last planned minor release and so should be the final upgrade and then you may stay up to date just from the continued 7.4 patch applications for the rest of EAP 7's support life.:
+
+7.4.0: https://access.redhat.com/jbossnetwork/restricted/softwareDetail.html?softwareId=99481
+
+
+If you must remain on EAP 7.3.2 or earlier, then the following workarounds would be recommended to address these concerns:
+
+1. Ensure you are on EAP 7.2.5+ at least.
+
+2. Then also adding -Dxnio.nio.alt-queued-server=true to your JVM options as a workaround to the server port death issue
+
+3. And tune the task-core-threads and task-max-threds of your io subsystem to be set to the same value to help limit some file churn:
+
+        <subsystem xmlns="urn:jboss:domain:io:3.0">
+            <worker name="default" task-core-threads="16*#ofCPUcores" task-max-threads="16*#ofCPUcores"/>
+            <buffer-pool name="default"/>
+        </subsystem>
+
+
+If you do still hit open file limits with those tunings or updates, the server listener port would not die anymore.  While under file exhaustion, any new socket creations can still fail so there may still be some other file leaks to potentially investigate to avoid any continued impact.
+
+So after the above fixes, we'd recommend also testing with an increased nofile limit and if any continued 'too many open files' concern or high observed file counts, the following would allow for further investigation:
+
+-output of the following commands for reference:
+
+    cat /proc/$JBOSS_PID/limits > jbosslimits.out
+    ulimit -a > ulimits.out
+
+-JBoss server logs
+
+-JBoss access logs.  Enable that like so with an access-log pattern like below in your undertow subsystem's host and ensure record-request-start-time is enabled on your undertow listeners, for example:
+
+    <server name="default-server">
+        <http-listener name="default" socket-binding="http" redirect-socket="https" record-request-start-time="true"/>
+        <host name="default-host" alias="localhost">
+            <location name="/" handler="welcome-content"/>
+            <access-log pattern="%h %l %u %t %r %s %b %{i,Referer} %{i,User-Agent} COOKIE: %{i,COOKIE} SET-COOKIE: %{o,SET-COOKIE} %S %I %T"/> <!-- added -->
+        </host>
+    </server>
+
+-Garbage collection logging, which you can enable as explained in https://access.redhat.com/solutions/18656
+
+-output of the following commands from JBoss at the issue time:
+
+    netstat -vatnp > netstat.out
+    lsof -p $JBOSS_PID > lsof.out
+
+-A heap dump from the issue time, which you can capture with your JDK's jmap command per https://access.redhat.com/solutions/21109#jmapjavaprocess:
+
+    jmap -dump:format=b,file=heap.hprof JAVA_PID
+
+-A series of thread dumps during the issue time, which you can capture as described in https://access.redhat.com/solutions/18178

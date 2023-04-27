@@ -1,0 +1,21 @@
+IJ000655: No managed connections available within configured blocking timeout
+https://access.redhat.com/solutions/17782
+I see you are receiving 'IJ000655: No managed connections available within configured blocking timeout' errors which indicates your datasource is reaching exhaustion and failing to provide connections to threads before they've waiting the configured datasource blocking timeout per https://access.redhat.com/solutions/17782.  This would cause unexpected failures and delays waiting for the datasource connections.  This may stem from a simple legitimate need for more connections for your load or you may have datasource connection leaks.  You may consider increasing datasource max pool sizes for improvement if this is a simple need for more connections.  Otherwise, we would need the following to further review for any connection leaks or other related concerns:
+
+-Garbage collection logging, which you can enable as explained in https://access.redhat.com/solutions/18656
+
+-JBoss access logs.  Enable that like so with an access-log pattern like below in your undertow subsystem's host and ensure record-request-start-time is enabled on your undertow listeners, for example:
+
+    <server name="default-server">
+        <http-listener name="default" socket-binding="http" redirect-socket="https" record-request-start-time="true"/>
+        <host name="default-host" alias="localhost">
+            <location name="/" handler="welcome-content"/>
+            <access-log pattern="%h %l %u %t %r %s %b %S %I %T"/>
+        </host>
+    </server>
+
+-Corresponding server log produced with the stuck thread handler per https://access.redhat.com/solutions/2157851 for a logged stack trace any time a request exceeds a desired threshold and the cached connection manager enabled and set to debug mode per https://access.redhat.com/solutions/309913 for connection clean up and a stacktrace indicating cause of any leaked connection.
+
+-Thread dumps and CPU utilization data from the time of the issue.  These can be captured as described in https://access.redhat.com/solutions/46596.  Note it is best to capture several thread dumps over time to see any change or progression in the threads or lack thereof as well as CPU utilization data to see exactly which threads are using the CPU.  This article includes a script you can use to easily collect these thread dumps and CPU data together.  I'd recommend using the high_cpu_linux_jstack.sh here, which leverages your JDK's jstack command. 
+
+Please test the thread dump script beforehand in your environment to ensure it is operating correctly and collecting the necessary data before it is needed to collect the mentioned diagnostic information at the time of the issue.

@@ -1,0 +1,27 @@
+Too many open files
+https://access.redhat.com/solutions/18018
+Your log shows you are hitting "Too many open files" errors, which would cause unexpected failures creating or accepting sockets or opening files.  Note that in Java, sockets are treated as files as well so when enough sockets and files are open to exceed OS level limits, this error is seen.  It may be that this is a simple need for a larger file limit for the load.  To change this value for the user, who is running the Java application, add the following lines to the /etc/security/limits.conf file:
+
+<username> soft nofile 8192
+<username> hard nofile 8192
+
+
+Logout the user and restart any process the user is running for this change to take effect.  If you continue to see this with increased open file limits, a file leak could be possible.  In case of any recurrence, please capture the following:
+
+-output of the following commands:
+
+# lsof -p <pid> > lsof.out
+# netstat -vatnp > netstat.out
+
+-Garbage collection logging, which you can enable as explained in https://access.redhat.com/solutions/18656
+
+-Corresponding JBoss server logs
+
+-A series of multiple thread dumps from the problematic JBoss nodes at the time of the issue.  These can be captured as described in https://access.redhat.com/solutions/18178.  This article includes a script you can use to easily collect a series of these dumps.  Please test the thread dump script beforehand in your environment to ensure it is operating correctly and collecting the necessary data before it is needed to collect the mentioned diagnostic information at the time of the issue.
+
+-A heap dump from the issue time, which you can capture with your JDK's jmap command per https://access.redhat.com/solutions/21109#jmapjavaprocess:
+
+    jmap -dump:format=b,file=heap.hprof JAVA_PID
+
+
+Also, how old is this environment and how long has this issue been occurring?  Has it occurred just the once or is it repeating?  Have there been any recent changes (patches, updates, code/config changes, load increases, etc.) that may have impacted this?

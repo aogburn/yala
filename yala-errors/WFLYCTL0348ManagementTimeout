@@ -1,0 +1,11 @@
+WFLYCTL0348: Timeout after
+https://access.redhat.com/solutions/1190323
+I see you are reaching WFLYCTL0348 management timeout errors, which indicate your start up/deployment activity is exceeding the jboss.as.management.blocking.timeout.  This could just be a need for a larger timeout to allow longer start up activity to complete.  That can be increased throug the jboss.as.management.blocking.timeout property per https://access.redhat.com/solutions/1190323.  If you still see that timeout after increasing or you think the current timeout should be sufficient, can you capture for review:
+
+-Garbage collection logging, which you can enable as explained in https://access.redhat.com/solutions/18656
+
+-Corresponding server log
+
+-Thread dumps and CPU utilization data during the startup/deployment attempt leading up to the timeout.  These can be captured as described in https://access.redhat.com/solutions/46596.  Note it is best to capture several thread dumps over time to see any change or progression in the threads or lack thereof as well as CPU utilization data to see exactly which threads are using the CPU.  This article includes a script you can use to easily collect these thread dumps and CPU data together.  I'd recommend using the high_cpu_linux_jstack.sh here, which leverages your JDK's jstack command. 
+
+Note tht for EAP 7.4.8+, the server log itself should contain a thread dump upon reaching the jboss.as.management.blocking.timeout.

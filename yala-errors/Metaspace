@@ -1,0 +1,16 @@
+java.lang.OutOfMemoryError: Metaspace
+https://access.redhat.com/solutions/2038983
+I see you are receiving 'java.lang.OutOfMemoryError: Metaspace' errors which indicates your metaspace is being exhausted.  This could just be a need for a larger metaspace or a legitimate classloader/metaspace leak.  In this OOME condition, the JVM will throw constant garbage collection, producing high CPU and virtually constant long pause times, yielding any applications the JVM is running unresponsive.
+
+You may consider increasing -XX:MaxMetaspaceSize for improvement if this is a simple need for more metaspace.  Otherwise, we would need the following with your server log to further review for any leaks contributing to this issue:
+
+-Garbage collection logging, which you can enable as explained in https://access.redhat.com/solutions/18656
+
+-Add -XX:+UnlockDiagnosticVMOptions to your JVM options, then capture GC.class_stats with jcmd at the issue time:
+
+$JAVA_HOME/bin/jcmd <JBOSS_JAVA_PID> GC.class_stats -all -csv > class_stats.csv
+
+-A heap dump, which you can capture as explained in https://access.redhat.com/solutions/21109.  The best method would be to use the -XX:+HeapDumpOnOutOfMemoryError flag to create the heap dump automatically when the OOME occurs.  Please compress the file and include the case number in the file name.
+
+
+Also, is this a newly deployed application, or has it been in production for some time and only recently this issue has appeared?  Have any changes been rolled out recently?  Are there any particular circumstances surrounding when the OutOfMemoryError happens?  For example, does it happen when specific functionality is executed (e.g. a file upload, a batch job, etc.), after a certain amount of time, under high load, after a certain amount of redeployments, etc?
