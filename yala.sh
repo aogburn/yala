@@ -38,7 +38,6 @@ if [ "x$CHECK_UPDATE" = "x" ]; then
             exit
         fi
     fi
-    echo "Check complete."
     echo "Checking known errors tar update."
     SUM=`md5sum $DIR/yala-errors.tar.xz | awk '{ print $1 }'`
     NEWSUM=`curl https://raw.githubusercontent.com/aogburn/yala/main/tarmd5`
@@ -46,12 +45,16 @@ if [ "x$CHECK_UPDATE" = "x" ]; then
     echo $SUM
     echo $NEWSUM
     if [ "x$NEWSUM" != "x" ]; then
+        if [ "x$SUM" == "x" ]; then
+            SUM=0
+        fi
         if [ $SUM != $NEWSUM ]; then
             echo "Version difference detected.  Downloading new tar."
             wget -q https://raw.githubusercontent.com/aogburn/yala/main/yala-errors.tar.xz -O $DIR/yala-errors.tar.xz
             tar -xf yala-errors.tar.xz
         fi
     fi
+    echo "Checks complete."
 fi
 
 #Summarize info
