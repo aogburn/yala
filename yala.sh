@@ -10,6 +10,8 @@
 
 FILE_NAME=$1
 EXT=".yala"
+TRIM_FILE="$FILE_NAME$EXT-trim"
+TMP_FILE="$FILE_NAME$EXT-tmp"
 DEST=$1$EXT
 ERROR_EXT="$EXT-errors"
 ERROR_DEST=$1$ERROR_EXT
@@ -69,6 +71,10 @@ echo
 echo -e "${RED}### Summarizing $FILE_NAME - see $DEST for more info and $ERROR_DEST for critical error suggestions ###${NC}"
 echo "### Summary of $FILE_NAME ###" > $DEST
 
+
+#trim file of unneeded exception stack trace lines
+egrep -v " at .*(.*)$|	at .*(.*)" $FILE_NAME >> $TRIM_FILE
+
 {
 echo
 echo "### Overview ###" 
@@ -79,8 +85,8 @@ echo -en "${BLUE}"
 echo -e "*** First and last lines of $FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 {
-grep "[0-2][0-9]:[0-5][0-9]:[0-5][0-9]" $FILE_NAME | head -n 1
-grep "[0-2][0-9]:[0-5][0-9]:[0-5][0-9]" $FILE_NAME | tail -n 1
+grep -m 1 "[0-2][0-9]:[0-5][0-9]:[0-5][0-9]" $TRIM_FILE | head -n 1
+tail -n 10000 $TRIM_FILE | grep "[0-2][0-9]:[0-5][0-9]:[0-5][0-9]" | tail -n 1
 echo
 }  | tee -a $DEST
 
@@ -89,12 +95,12 @@ echo -en "${BLUE}"
 echo -e "*** VM args and info of $FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 {
-grep "java.runtime.name =" $FILE_NAME | uniq
-grep "java.runtime.version =" $FILE_NAME | uniq
-grep "sun.java.command = " $FILE_NAME | uniq
+grep "java.runtime.name =" $TRIM_FILE | uniq
+grep "java.runtime.version =" $TRIM_FILE | uniq
+grep "sun.java.command = " $TRIM_FILE | uniq
 echo
 echo -n "	"
-grep "DEBUG \[org.jboss.as.config\] (MSC service thread 1-[0-9]) VM Arguments: " $FILE_NAME | sed 's/^.*VM Arguments/VMArguments/g' | uniq
+grep "DEBUG \[org.jboss.as.config\] (MSC service thread 1-[0-9]) VM Arguments: " $TRIM_FILE | sed 's/^.*VM Arguments/VMArguments/g' | uniq
 echo
 } | tee -a $DEST
 
@@ -118,7 +124,7 @@ echo -en "${NC}"
 # WFLYSRV0282 - startingNonGraceful
 # WFLYSRV0283 - disregardingNonGraceful
 # WFLYSRV0272 - suspending
-egrep "WFLYSRV0026|WFLYSRV0049|WFLYSRV0050|WFLYSRV0211|WFLYSRV0212|WFLYSRV0215|WFLYSRV0220|WFLYSRV0236|WFLYSRV0239|WFLYSRV0240|WFLYSRV0241|WFLYSRV0260|WFLYSRV0272|WFLYSRV0282|WFLYSRV0283" $FILE_NAME
+egrep "WFLYSRV0026|WFLYSRV0049|WFLYSRV0050|WFLYSRV0211|WFLYSRV0212|WFLYSRV0215|WFLYSRV0220|WFLYSRV0236|WFLYSRV0239|WFLYSRV0240|WFLYSRV0241|WFLYSRV0260|WFLYSRV0272|WFLYSRV0282|WFLYSRV0283" $TRIM_FILE
 echo
 } | tee -a $DEST
 
@@ -130,7 +136,7 @@ echo "*** Notable ports of $FILE_NAME ***"
 # WFLYUT0006 - UT listener listening
 # WFLYUT0007 - UT listener stopped
 # WFLYUT0008 - UT listener suspending
-egrep "WFLYUT000[6-8]|WFLYSRV005[1-3]" $FILE_NAME
+egrep "WFLYUT000[6-8]|WFLYSRV005[1-3]" $TRIM_FILE
 echo
 
 
@@ -158,13 +164,13 @@ echo "*** Deployment activity of $FILE_NAME ***"
 # WFLYSRV0219 - has been redeployed
 # WFLYSRV0233 - undeployed
 # WFLYSRV0234 - deployed
-egrep "WFLYSRV000[7-9]|WFLYSRV001[0-6]|WFLYSRV002[0-2]|WFLYSRV002[7-8]|WFLYSRV0070|WFLYSRV0087|WFLYSRV0205|WFLYSRV020[7-8]|WFLYSRV0219|WFLYSRV023[3-4]" $FILE_NAME
+egrep "WFLYSRV000[7-9]|WFLYSRV001[0-6]|WFLYSRV002[0-2]|WFLYSRV002[7-8]|WFLYSRV0070|WFLYSRV0087|WFLYSRV0205|WFLYSRV020[7-8]|WFLYSRV0219|WFLYSRV023[3-4]" $TRIM_FILE
 echo
 
 echo "*** Application context registrations of $FILE_NAME ***"
 # WFLYUT0021 - register
 # WFLYUT0022 - unregister
-grep "WFLYUT002[1-2]" $FILE_NAME
+grep "WFLYUT002[1-2]" $TRIM_FILE
 echo
 } >> $DEST
 
@@ -191,7 +197,7 @@ else
     for f in $ERRORS_DIR*
     do
         ERROR_STRING=`head -n 1 $f`
-        ERROR_COUNT=`egrep "$ERROR_STRING" $FILE_NAME | wc -l`
+        ERROR_COUNT=`egrep "$ERROR_STRING" $TRIM_FILE | wc -l`
         if [ $ERROR_COUNT -gt 0 ]; then
             echo -en "${GREEN}"
             {
@@ -211,7 +217,7 @@ else
             {
             echo "        * Occurrences in $FILE_NAME: "
             echo
-            grep "$ERROR_STRING" $FILE_NAME | uniq
+            grep "$ERROR_STRING" $TRIM_FILE | uniq
             echo
             } | tee -a $ERROR_DEST
             i=$((i+1))
@@ -232,4 +238,4 @@ fi
 echo -en "${BLUE}"
 echo "*** Counts of other errors in $FILE_NAME ***" | tee -a $ERROR_DEST
 echo -en "${NC}"
-grep " ERROR \[" $FILE_NAME | sed 's/^.* ERROR \[.*\] ([^)]*) //g' | sed 's/^.* ERROR \[.*] //g' | sort | uniq -c | sort -nr | tee -a $ERROR_DEST
+grep " ERROR \[" $TRIM_FILE | sed 's/^.* ERROR \[.*\] ([^)]*) //g' | sed 's/^.* ERROR \[.*] //g' | sort | uniq -c -w 150 | sort -nr | tee -a $ERROR_DEST
