@@ -12,6 +12,7 @@ FILE_NAME=$1
 EXT=".yala"
 TRIM_FILE="$FILE_NAME$EXT-trim"
 TMP_FILE="$FILE_NAME$EXT-tmp"
+TMP_FILE2="$FILE_NAME$EXT-tmp2"
 DEST=$1$EXT
 ERROR_EXT="$EXT-errors"
 ERROR_DEST=$1$ERROR_EXT
@@ -25,7 +26,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Check for a new yala.sh.  Uncomment next line if you want to avoid this check
- CHECK_UPDATE="false"
+# CHECK_UPDATE="false"
 if [ "x$CHECK_UPDATE" = "x" ]; then
     echo "Checking script update. Uncomment CHECK_UPDATE in script if you wish to skip."
     SUM=`md5sum $DIR/yala.sh | awk '{ print $1 }'`
@@ -72,8 +73,8 @@ echo -e "${RED}### Summarizing $FILE_NAME - see $DEST for more info and $ERROR_D
 echo "### Summary of $FILE_NAME ###" > $DEST
 
 
-#trim file of unneeded exception stack trace lines
-egrep -v " at .*(.*)$|	at .*(.*)|^$" $FILE_NAME >> $TRIM_FILE
+#trim file of unneeded exception stack trace lines and empty lines
+egrep -v " at .*(.*)$|	at .*(.*)|^$" $FILE_NAME > $TRIM_FILE
 
 {
 echo
@@ -186,16 +187,16 @@ if [ ! -d $ERRORS_DIR ]; then
     echo
 else
     echo -en "${BLUE}"
-    echo "*** Known critical errors defined in $ERRORS_DIR - see $ERROR_DEST for more error summaries ***"
+    echo "*** Known critical errors defined in $ERRORS_DIR ***" | tee -a $ERROR_DEST
     echo -en "${NC}"
-    echo "*** Known critical errors defined in $ERRORS_DIR ***" >> $ERROR_DEST
     echo | tee -a $ERROR_DEST
     i=1
     j=0
     for f in $ERRORS_DIR*
     do
         ERROR_STRING=`head -n 1 $f`
-        ERROR_COUNT=`egrep "$ERROR_STRING" $TRIM_FILE | wc -l`
+        egrep "$ERROR_STRING" $TRIM_FILE > $TMP_FILE
+        ERROR_COUNT=`cat $TMP_FILE | wc -l`
         if [ $ERROR_COUNT -gt 0 ]; then
             echo -en "${GREEN}"
             {
@@ -213,9 +214,15 @@ else
             echo -en "${GREEN}"
 
             {
-            echo "        * Occurrences in $FILE_NAME: "
+            echo "        * Sample occurrences in $FILE_NAME: "
             echo
-            grep "$ERROR_STRING" $TRIM_FILE | uniq
+            if [ $ERROR_COUNT -gt 10 ]; then
+                head -n 5 $TMP_FILE
+                echo "..."
+                tail -n 5 $TMP_FILE
+            else
+                cat $TMP_FILE
+            fi
             echo
             } | tee -a $ERROR_DEST
             i=$((i+1))
@@ -233,7 +240,23 @@ else
 fi
 
 
+
+# parse out ERROR strings stripped of categories and threads
+grep " ERROR \[" $TRIM_FILE | sed 's/^.* ERROR \[.*\] ([^)]*) //g' | sed 's/^.* ERROR \[.*] //g' > $TMP_FILE
+#count total
+ERROR_COUNT=`cat $TMP_FILE | wc -l`
+#sort and count uniques
+cat $TMP_FILE | sort | uniq -c -w 150 | sort -nr > $TMP_FILE2
+UNIQUE_COUNT=`cat $TMP_FILE2 | wc -l`
 echo -en "${BLUE}"
-echo "*** Counts of other errors in $FILE_NAME ***" | tee -a $ERROR_DEST
+echo "*** Counts of other errors in $FILE_NAME - $ERROR_COUNT total error occurrences of $UNIQUE_COUNT unique error types ***" | tee -a $ERROR_DEST
+echo "*** top 20 - see $ERROR_DEST for more ***"
 echo -en "${NC}"
-grep " ERROR \[" $TRIM_FILE | sed 's/^.* ERROR \[.*\] ([^)]*) //g' | sed 's/^.* ERROR \[.*] //g' | sort | uniq -c -w 150 | sort -nr | tee -a $ERROR_DEST
+head -n 20 $TMP_FILE2
+cat $TMP_FILE2 >> $ERROR_DEST
+#grep " ERROR \[" $TRIM_FILE | sed 's/^.* ERROR \[.*\] ([^)]*) //g' | sed 's/^.* ERROR \[.*] //g' | sort | uniq -c -w 150 | sort -nr | tee -a $ERROR_DEST
+
+#clean up extras
+rm -rf $TRIM_FILE
+rm -rf $TMP_FILE
+rm -rf $TMP_FILE2
