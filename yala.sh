@@ -73,7 +73,7 @@ echo "### Summary of $FILE_NAME ###" > $DEST
 
 
 #trim file of unneeded exception stack trace lines
-egrep -v " at .*(.*)$|	at .*(.*)" $FILE_NAME >> $TRIM_FILE
+egrep -v " at .*(.*)$|	at .*(.*)|^$" $FILE_NAME >> $TRIM_FILE
 
 {
 echo
@@ -85,8 +85,8 @@ echo -en "${BLUE}"
 echo -e "*** First and last lines of $FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 {
-grep -m 1 "[0-2][0-9]:[0-5][0-9]:[0-5][0-9]" $TRIM_FILE | head -n 1
-tail -n 10000 $TRIM_FILE | grep "[0-2][0-9]:[0-5][0-9]:[0-5][0-9]" | tail -n 1
+head -n 1 "$TRIM_FILE"
+tail -n 1 "$TRIM_FILE"
 echo
 }  | tee -a $DEST
 
@@ -126,10 +126,8 @@ echo -en "${NC}"
 # WFLYSRV0272 - suspending
 egrep "WFLYSRV0026|WFLYSRV0049|WFLYSRV0050|WFLYSRV0211|WFLYSRV0212|WFLYSRV0215|WFLYSRV0220|WFLYSRV0236|WFLYSRV0239|WFLYSRV0240|WFLYSRV0241|WFLYSRV0260|WFLYSRV0272|WFLYSRV0282|WFLYSRV0283" $TRIM_FILE
 echo
-} | tee -a $DEST
 
 
-{
 echo "*** Notable ports of $FILE_NAME ***"
 # WFLYSRV005[1-3] - admin console port
 # WFLYSRV006[1-3] - http console port
@@ -172,7 +170,7 @@ echo "*** Application context registrations of $FILE_NAME ***"
 # WFLYUT0022 - unregister
 grep "WFLYUT002[1-2]" $TRIM_FILE
 echo
-} >> $DEST
+} | tee -a $DEST
 
 
 
