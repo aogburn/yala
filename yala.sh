@@ -14,7 +14,7 @@ DEST=$1$EXT
 ERROR_EXT="$EXT-errors"
 ERROR_DEST=$1$ERROR_EXT
 DIR=`dirname "$(readlink -f "$0")"`
-ERRORS_DIR="$DIR/yala-errors/*"
+ERRORS_DIR="$DIR/yala-errors/"
 
 RED='\033[0;31m'
 BLUE='\033[0;34m'
@@ -23,7 +23,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Check for a new yala.sh.  Uncomment next line if you want to avoid this check
-# CHECK_UPDATE="false"
+ CHECK_UPDATE="false"
 if [ "x$CHECK_UPDATE" = "x" ]; then
     echo "Checking script update. Uncomment CHECK_UPDATE in script if you wish to skip."
     SUM=`md5sum $DIR/yala.sh | awk '{ print $1 }'`
@@ -56,6 +56,13 @@ if [ "x$CHECK_UPDATE" = "x" ]; then
     fi
     echo "Checks complete."
 fi
+
+
+if [ ! -f "$FILE_NAME" ]; then
+    echo "$FILE_NAME does not exist."
+    exit
+fi
+
 
 #Summarize info
 echo
@@ -169,52 +176,60 @@ echo "### ERROR Summary of $FILE_NAME ###" | tee $ERROR_DEST
 echo | tee -a $ERROR_DEST
 echo -en "${NC}"
 
+
+if [ ! -d $ERRORS_DIR ]; then
+    echo "Not checking known critical errors as $ERRORS_DIR does not exist" | tee -a $ERROR_DEST
+    echo
+else
+    echo -en "${BLUE}"
+    echo "*** Known critical errors defined in $ERRORS_DIR - see $ERROR_DEST for more error summaries ***"
+    echo -en "${NC}"
+    echo "*** Known critical errors defined in $ERRORS_DIR ***" >> $ERROR_DEST
+    echo | tee -a $ERROR_DEST
+    i=1
+    j=0
+    for f in $ERRORS_DIR*
+    do
+        ERROR_STRING=`head -n 1 $f`
+        ERROR_COUNT=`egrep "$ERROR_STRING" $FILE_NAME | wc -l`
+        if [ $ERROR_COUNT -gt 0 ]; then
+            echo -en "${GREEN}"
+            {
+            echo "    $i. Occurrences of \"$ERROR_STRING\" in $FILE_NAME: $ERROR_COUNT"
+            echo "        * Suggested KCS: `sed -n 2p $f`"
+            echo "        * Suggested comment: "
+            echo
+            } | tee -a $ERROR_DEST
+
+            echo -en "${YELLOW}"
+            {
+            tail -n +3 $f
+            echo
+            } | tee -a $ERROR_DEST
+            echo -en "${GREEN}"
+
+            {
+            echo "        * Occurrences in $FILE_NAME: "
+            echo
+            grep "$ERROR_STRING" $FILE_NAME | uniq
+            echo
+            } | tee -a $ERROR_DEST
+            i=$((i+1))
+        fi
+    j=$((j+1))
+    done
+    i=$((i-1))
+
+    echo -en "${RED}"
+    {
+    echo
+    echo "*** $i known ERRORS found of $j checked ***"
+    echo
+    } | tee -a $ERROR_DEST
+fi
+
+
 echo -en "${BLUE}"
-echo "*** Known critical errors defined in $ERRORS_DIR - see $ERROR_DEST for more error summaries ***" $ERROR_DEST
-echo -en "${NC}"
-echo "*** Known critical errors defined in $ERRORS_DIR ***" >> $ERROR_DEST
-echo | tee -a $ERROR_DEST
-i=1
-j=0
-for f in $ERRORS_DIR
-do
-    ERROR_STRING=`head -n 1 $f`
-    ERROR_COUNT=`egrep "$ERROR_STRING" $FILE_NAME | wc -l`
-    if [ $ERROR_COUNT -gt 0 ]; then
-        echo -en "${GREEN}"
-        {
-        echo "    $i. Occurrences of \"$ERROR_STRING\" in $FILE_NAME: $ERROR_COUNT"
-        echo "        * Suggested KCS: `sed -n 2p $f`"
-        echo "        * Suggested comment: "
-        echo
-        } | tee -a $ERROR_DEST
-        echo -en "${YELLOW}"
-        {
-        tail -n +3 $f
-        echo
-        } | tee -a $ERROR_DEST
-        echo -en "${GREEN}"
-        {
-        echo "        * Occurrences in $FILE_NAME: "
-        echo
-        grep "$ERROR_STRING" $FILE_NAME | uniq
-        echo
-        } | tee -a $ERROR_DEST
-        i=$((i+1))
-    fi
-j=$((j+1))
-done
-
-i=$((i-1))
-echo -en "${RED}"
-{
-echo
-echo "*** $i known ERRORS found of $j checked. ***"
-echo
-} | tee -a $ERROR_DEST
-
-
-echo -en "${BLUE}"
-echo "*** Counts of other errors in $FILE_NAME:***" | tee -a $ERROR_DEST
+echo "*** Counts of other errors in $FILE_NAME ***" | tee -a $ERROR_DEST
 echo -en "${NC}"
 grep " ERROR \[" $FILE_NAME | sed 's/^.* ERROR \[.*\] ([^)]*) //g' | sed 's/^.* ERROR \[.*] //g' | sort | uniq -c | sort -nr | tee -a $ERROR_DEST
