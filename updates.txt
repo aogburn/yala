@@ -1,5 +1,5 @@
 https://source.redhat.com/groups/public/gss-jboss-base-as/gss_jboss_base_as_wiki/summarizing_serverlogs_via_yala
-https://github.com/aogburn/yatda/
+https://github.com/aogburn/yala/
 md5sum yala.sh | awk '{ print $1 }' > md5
 tar -czvf yala-errors/ yala-errors.tar.xz
 md5sum yala-errors.tar.xz | awk '{ print $1 }' > tarmd5
