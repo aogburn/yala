@@ -3,10 +3,12 @@ Yet Another Log Analyzer
 
 # installation
 * To install, run the following in a directory where you want to keep the script and known error file references:
-> wget https://raw.githubusercontent.com/aogburn/yala/main/yala.sh
-> chmod 755 yala.sh
-> wget https://raw.githubusercontent.com/aogburn/yala/master/yala-errors.tar.xz
-> tar -xf yala-errors.tar.xz
+```
+wget https://raw.githubusercontent.com/aogburn/yala/main/yala.sh
+chmod 755 yala.sh
+wget https://raw.githubusercontent.com/aogburn/yala/master/yala-errors.tar.xz
+tar -xf yala-errors.tar.xz
+```
 
 # updating 
 
