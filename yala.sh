@@ -109,7 +109,7 @@ echo
 echo -en "${BLUE}"
 echo -e "*** Start and stop events of $FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
-{
+
 # WFLYSRV0026 - started
 # WFLYSRV0049 - starting
 # WFLYSRV0050 - stopped
@@ -125,21 +125,28 @@ echo -en "${NC}"
 # WFLYSRV0282 - startingNonGraceful
 # WFLYSRV0283 - disregardingNonGraceful
 # WFLYSRV0272 - suspending
+{
 egrep "WFLYSRV0026|WFLYSRV0049|WFLYSRV0050|WFLYSRV0211|WFLYSRV0212|WFLYSRV0215|WFLYSRV0220|WFLYSRV0236|WFLYSRV0239|WFLYSRV0240|WFLYSRV0241|WFLYSRV0260|WFLYSRV0272|WFLYSRV0282|WFLYSRV0283" $TRIM_FILE
 echo
+} | tee -a $DEST
 
-
-echo "*** Notable ports of $FILE_NAME ***"
+echo -en "${BLUE}"
+echo "*** Notable ports of $FILE_NAME ***" | tee -a $DEST
+echo -en "${NC}"
 # WFLYSRV005[1-3] - admin console port
 # WFLYSRV006[1-3] - http console port
 # WFLYUT0006 - UT listener listening
 # WFLYUT0007 - UT listener stopped
 # WFLYUT0008 - UT listener suspending
+{
 egrep "WFLYUT000[6-8]|WFLYSRV005[1-3]" $TRIM_FILE
 echo
+} | tee -a $DEST
 
 
-echo "*** Deployment activity of $FILE_NAME ***"
+echo -en "${BLUE}"
+echo "*** Deployment activity of $FILE_NAME ***" | tee -a $DEST
+echo -en "${NC}"
 # WFLYSRV0007 - undeploy rolled back with failure
 # WFLYSRV0008 - undeploy rolled back with no failure
 # WFLYSRV0009 - undeployed
@@ -163,12 +170,18 @@ echo "*** Deployment activity of $FILE_NAME ***"
 # WFLYSRV0219 - has been redeployed
 # WFLYSRV0233 - undeployed
 # WFLYSRV0234 - deployed
+{
 egrep "WFLYSRV000[7-9]|WFLYSRV001[0-6]|WFLYSRV002[0-2]|WFLYSRV002[7-8]|WFLYSRV0070|WFLYSRV0087|WFLYSRV0205|WFLYSRV020[7-8]|WFLYSRV0219|WFLYSRV023[3-4]" $TRIM_FILE
 echo
+} | tee -a $DEST
 
-echo "*** Application context registrations of $FILE_NAME ***"
+
+echo -en "${BLUE}"
+echo "*** Application context registrations of $FILE_NAME ***" | tee -a $DEST
+echo -en "${NC}"
 # WFLYUT0021 - register
 # WFLYUT0022 - unregister
+{
 grep "WFLYUT002[1-2]" $TRIM_FILE
 echo
 } | tee -a $DEST
