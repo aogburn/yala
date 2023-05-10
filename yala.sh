@@ -15,15 +15,16 @@ TMP_FILE="$FILE_NAME$EXT-tmp"
 TMP_FILE2="$FILE_NAME$EXT-tmp2"
 DEST=$1$EXT
 ERROR_EXT="$EXT-errors"
-ERROR_DEST=$1$ERROR_EXT
+export ERROR_DEST=$1$ERROR_EXT
 DIR=`dirname "$(readlink -f "$0")"`
 ERRORS_DIR="$DIR/yala-errors/"
+SCRIPTS_DIR="$DIR/condition-scripts/"
 
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+export RED='\033[0;31m'
+export BLUE='\033[0;34m'
+export GREEN='\033[0;32m'
+export YELLOW='\033[1;33m'
+export NC='\033[0m'
 
 # Check for a new yala.sh.  Uncomment next line if you want to avoid this check
 # CHECK_UPDATE="false"
@@ -55,6 +56,7 @@ if [ "x$CHECK_UPDATE" = "x" ]; then
             echo "Version difference detected.  Downloading new tar."
             wget -q https://raw.githubusercontent.com/aogburn/yala/main/yala-errors.tar.xz -O $DIR/yala-errors.tar.xz
             tar -xf yala-errors.tar.xz
+            chmod -R 755 $SCRIPTS_DIR
         fi
     fi
     echo "Checks complete."
@@ -252,6 +254,32 @@ else
     } | tee -a $ERROR_DEST
 fi
 
+
+# Summarize any more complex known conditions to check
+if [ ! -d $SCRIPTS_DIR ]; then
+    echo "Not checking other known concerns as $SCRIPTS_DIR does not exist" | tee -a $ERROR_DEST
+    echo
+else
+#reset error counters
+    j=0
+
+    echo -en "${BLUE}"
+    echo "*** Known concerns defined in $SCRIPTS_DIR ***" | tee -a $ERROR_DEST
+    echo -en "${NC}"
+    echo | tee -a $ERROR_DEST
+    for f in $SCRIPTS_DIR*
+    do
+        $f $TRIM_FILE
+        j=$((j+1))
+    done
+
+    echo -en "${RED}"
+    {
+    echo
+    echo "*** $j known concerns checked ***"
+    echo
+    } | tee -a $ERROR_DEST
+fi
 
 
 # parse out ERROR strings stripped of categories and threads
