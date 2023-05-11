@@ -1,0 +1,14 @@
+WFLYSRV00(49|50): JBoss EAP 7.[0-3]
+https://access.redhat.com/support/policy/updates/jboss_notes
+You are using an outdated EAP version that is no longer receiving further patch updates so this is falling increasingly behind on fixes as maintenance updates have now fully shifted to EAP 7.4.  Per https://access.redhat.com/support/policy/updates/jboss_notes:
+
+"NOTE: Defect and security fixes are only provided for the latest Minor, Micro or CP release, therefore upgrading to the latest release is required in order to receive the current updates. Additionally, upgrades and patches are expected to be applied to a supported configuration as published."
+
+
+EAP 7.3 and earlier are not recommended for use as they have a number of growing open vulnerabilities and unresolved bugs without any possibility to patch.  We would recommend an upgrade to 7.4 soon for the latest and to be in position to absorb ongoing fixes from later 7.4 patch updates:
+
+7.4.0: https://access.redhat.com/jbossnetwork/restricted/softwareDetail.html?softwareId=99481
+7.4.10: https://access.redhat.com/jbossnetwork/restricted/softwareDetail.html?softwareId=105218
+
+
+Note 7.4 is the last planned minor release and so should be the final upgrade and then you may stay up to date just from the continued 7.4 patch applications for the rest of EAP 7's support life.
