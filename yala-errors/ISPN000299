@@ -1,0 +1,12 @@
+ISPN000299: Unable to acquire lock
+https://access.redhat.com/solutions/2776221
+Your logging shows concurrent requests for the same session facing contention and timing out on session locks due to your current cache configuration, contributing to some unexpected errors and slowness.  Per https://access.redhat.com/solutions/2776221, you can allow concurrent access by modifying the web session replication cache configuration to remove <locking> and <transaction> completely. It is also necessary to remove the "mode" attribute to use the default setting of SYNC in EAP 7.1+:
+
+<cache-container name="web" default-cache="dist" module="org.wildfly.clustering.web.infinispan">
+    <transport lock-timeout="60000"/>
+    <distributed-cache name="dist" mode="ASYNC" l1-lifespan="0" owners="2">  <!-- IN 7.1+ REMOVE mode="..." IF PRESENT -->
+        <locking isolation="REPEATABLE_READ"/>                               <!-- REMOVE THIS LINE -->
+        <transaction mode="BATCH"/>                                          <!-- REMOVE THIS LINE -->
+        <file-store/>
+    </distributed-cache>
+</cache-container>
