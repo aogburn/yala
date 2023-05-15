@@ -76,7 +76,7 @@ export NC='\033[0m'
 # Check for a new yala.sh.  Uncomment next line if you want to avoid this check
 # CHECK_UPDATE="false"
 if [ "x$CHECK_UPDATE" = "x" ]; then
-    echo "Checking script update. Uncomment CHECK_UPDATE in script if you wish to skip."
+    echo "Checking script update. Uncomment CHECK_UPDATE in script or run with -s flag if you wish to skip."
     SUM=`md5sum $DIR/yala.sh | awk '{ print $1 }'`
     NEWSUM=`curl https://raw.githubusercontent.com/aogburn/yala/main/md5`
     echo $DIR
