@@ -7,8 +7,49 @@
 #
 # Usage: sh ./yala.sh <SERVER_LOG>
 
+usage() {
+    if [ ! "x$1" = "x" ]; then
+        echo
+        echo -e "$1"
+        echo
+    fi
+    echo "Usage:"
+    echo " sh ./yala.sh <options> <SERVER_LOG>"
+    echo
+    echo "Yala is just Yet Another Log Analyzer. It focuses on "
+    echo "providing quick JBoss EAP 7+ server log summaries,"
+    echo "highlighting known critical ERRORs, and counts of"
+    echo "other general errors at a glance."
+    echo
+    echo "Options:"
+    echo " -s, --skip              skip checking for updates"
+    echo " -h, --help              show this help" 
+}
 
+OPTS=$(getopt -o 'h,s' --long 'help,skip' -n 'yala' -- "$@")
+eval set -- "$OPTS"
+unset OPTS
+
+while true; do
+    case "$1" in
+        '-h'|'--help')
+            usage; exit; shift
+            ;;
+        '-s'|'--skip')
+            CHECK_UPDATE="false"; shift
+            ;;
+        '--') shift; break;;
+        * )
+            echo "Invalid Option: $1"
+            echo ""
+            usage; exit; shift
+            ;;
+    esac
+done
+
+# after parsing the options, '$1' must be the file name
 FILE_NAME=$1
+
 EXT=".yala"
 TRIM_FILE="$FILE_NAME$EXT-trim"
 TMP_FILE="$FILE_NAME$EXT-tmp"
@@ -62,9 +103,11 @@ if [ "x$CHECK_UPDATE" = "x" ]; then
     echo "Checks complete."
 fi
 
-
-if [ ! -f "$FILE_NAME" ]; then
-    echo "$FILE_NAME does not exist."
+if [ "x$FILE_NAME" = "x" ]; then
+    usage "${RED}No <SERVER_LOG> provided.${NC}"
+    exit
+elif [ ! -f "$FILE_NAME" ]; then
+    usage "${YELLOW}<SERVER_LOG> '$FILE_NAME' does not exist.${NC}"
     exit
 fi
 
