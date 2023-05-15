@@ -145,6 +145,15 @@ egrep "WFLYUT000[6-8]|WFLYSRV005[1-3]" $TRIM_FILE
 echo
 } | tee -a $DEST
 
+echo -en "${BLUE}"
+echo "*** Patch information of $FILE_NAME ***" | tee -a $DEST
+echo -en "${NC}"
+# WFLYPAT0050 - patch information
+{
+egrep "WFLYPAT0050" $TRIM_FILE
+echo
+} | tee -a $DEST
+
 
 echo -en "${BLUE}"
 echo "*** Deployment activity of $FILE_NAME ***" | tee -a $DEST
