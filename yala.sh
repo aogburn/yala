@@ -132,10 +132,10 @@ if [ ! -z $LAST_STARTED_ONLY ]; then
     sed -n '/WFLYSRV0049/h;//!H;$!d;x;//p' $FILE_NAME > $LAST_FILE
     
     # trim file of unneeded exception stack trace lines and empty lines, last server start only
-    egrep -v " at .*(.*)$|	at .*(.*)|^$" $LAST_FILE > $TRIM_FILE
+    egrep -v " at .*\(.*\)$|	at .*\(.*\)|^$" $LAST_FILE > $TRIM_FILE
 else
     #trim file of unneeded exception stack trace lines and empty lines
-    egrep -v " at .*(.*)$|	at .*(.*)|^$" $FILE_NAME > $TRIM_FILE
+    egrep -v " at .*\(.*\)$|	at .*\(.*\)|^$" $FILE_NAME > $TRIM_FILE
 fi
 
 {
