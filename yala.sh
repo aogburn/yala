@@ -22,11 +22,12 @@ usage() {
     echo "other general errors at a glance."
     echo
     echo "Options:"
+    echo " -l, --last              analyse the last started JBoss only"
     echo " -s, --skip              skip checking for updates"
     echo " -h, --help              show this help" 
 }
 
-OPTS=$(getopt -o 'h,s' --long 'help,skip' -n 'yala' -- "$@")
+OPTS=$(getopt -o 'h,l,s' --long 'help,last,skip' -n 'yala' -- "$@")
 eval set -- "$OPTS"
 unset OPTS
 
@@ -34,6 +35,9 @@ while true; do
     case "$1" in
         '-h'|'--help')
             usage; exit; shift
+            ;;
+        '-l'|'--last')
+            LAST_STARTED_ONLY="true"; shift
             ;;
         '-s'|'--skip')
             CHECK_UPDATE="false"; shift
@@ -56,6 +60,8 @@ TMP_FILE="$FILE_NAME$EXT-tmp"
 TMP_FILE2="$FILE_NAME$EXT-tmp2"
 DEST=$1$EXT
 ERROR_EXT="$EXT-errors"
+LAST_FILE="$FILE_NAME.lastOnly"
+
 export ERROR_DEST=$1$ERROR_EXT
 DIR=`dirname "$(readlink -f "$0")"`
 ERRORS_DIR="$DIR/yala-errors/"
@@ -117,9 +123,20 @@ echo
 echo -e "${RED}### Summarizing $FILE_NAME - see $DEST for more info and $ERROR_DEST for critical error suggestions ###${NC}"
 echo "### Summary of $FILE_NAME ###" > $DEST
 
+if [ ! -z $LAST_STARTED_ONLY ]; then
 
-#trim file of unneeded exception stack trace lines and empty lines
-egrep -v " at .*(.*)$|	at .*(.*)|^$" $FILE_NAME > $TRIM_FILE
+    echo
+    echo -e "${YELLOW}Analysing the last server start only!${NC}"
+
+    # extract the last server start only...
+    sed -n '/WFLYSRV0049/h;//!H;$!d;x;//p' $FILE_NAME > $LAST_FILE
+    
+    # trim file of unneeded exception stack trace lines and empty lines, last server start only
+    egrep -v " at .*(.*)$|	at .*(.*)|^$" $LAST_FILE > $TRIM_FILE
+else
+    #trim file of unneeded exception stack trace lines and empty lines
+    egrep -v " at .*(.*)$|	at .*(.*)|^$" $FILE_NAME > $TRIM_FILE
+fi
 
 {
 echo
