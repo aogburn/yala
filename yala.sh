@@ -7,14 +7,61 @@
 #
 # Usage: sh ./yala.sh <SERVER_LOG>
 
+usage() {
+    if [ ! "x$1" = "x" ]; then
+        echo
+        echo -e "$1"
+        echo
+    fi
+    echo "Usage:"
+    echo " sh ./yala.sh <options> <SERVER_LOG>"
+    echo
+    echo "Yala is just Yet Another Log Analyzer. It focuses on "
+    echo "providing quick JBoss EAP 7+ server log summaries,"
+    echo "highlighting known critical ERRORs, and counts of"
+    echo "other general errors at a glance."
+    echo
+    echo "Options:"
+    echo " -l, --last              analyse the last started JBoss only"
+    echo " -s, --skip              skip checking for updates"
+    echo " -h, --help              show this help" 
+}
 
+OPTS=$(getopt -o 'h,l,s' --long 'help,last,skip' -n 'yala' -- "$@")
+eval set -- "$OPTS"
+unset OPTS
+
+while true; do
+    case "$1" in
+        '-h'|'--help')
+            usage; exit; shift
+            ;;
+        '-l'|'--last')
+            LAST_STARTED_ONLY="true"; shift
+            ;;
+        '-s'|'--skip')
+            CHECK_UPDATE="false"; shift
+            ;;
+        '--') shift; break;;
+        * )
+            echo "Invalid Option: $1"
+            echo ""
+            usage; exit; shift
+            ;;
+    esac
+done
+
+# after parsing the options, '$1' must be the file name
 FILE_NAME=$1
+
 EXT=".yala"
 TRIM_FILE="$FILE_NAME$EXT-trim"
 TMP_FILE="$FILE_NAME$EXT-tmp"
 TMP_FILE2="$FILE_NAME$EXT-tmp2"
 DEST=$1$EXT
 ERROR_EXT="$EXT-errors"
+LAST_FILE="$FILE_NAME.lastOnly"
+
 export ERROR_DEST=$1$ERROR_EXT
 DIR=`dirname "$(readlink -f "$0")"`
 ERRORS_DIR="$DIR/yala-errors/"
@@ -62,9 +109,11 @@ if [ "x$CHECK_UPDATE" = "x" ]; then
     echo "Checks complete."
 fi
 
-
-if [ ! -f "$FILE_NAME" ]; then
-    echo "$FILE_NAME does not exist."
+if [ "x$FILE_NAME" = "x" ]; then
+    usage "${RED}No <SERVER_LOG> provided.${NC}"
+    exit
+elif [ ! -f "$FILE_NAME" ]; then
+    usage "${YELLOW}<SERVER_LOG> '$FILE_NAME' does not exist.${NC}"
     exit
 fi
 
@@ -74,9 +123,20 @@ echo
 echo -e "${RED}### Summarizing $FILE_NAME - see $DEST for more info and $ERROR_DEST for critical error suggestions ###${NC}"
 echo "### Summary of $FILE_NAME ###" > $DEST
 
+if [ ! -z $LAST_STARTED_ONLY ]; then
 
-#trim file of unneeded exception stack trace lines and empty lines
-egrep -v " at .*(.*)$|	at .*(.*)|^$" $FILE_NAME > $TRIM_FILE
+    echo
+    echo -e "${YELLOW}Analysing the last server start only!${NC}"
+
+    # extract the last server start only...
+    sed -n '/WFLYSRV0049/h;//!H;$!d;x;//p' $FILE_NAME > $LAST_FILE
+    
+    # trim file of unneeded exception stack trace lines and empty lines, last server start only
+    egrep -v " at .*(.*)$|	at .*(.*)|^$" $LAST_FILE > $TRIM_FILE
+else
+    #trim file of unneeded exception stack trace lines and empty lines
+    egrep -v " at .*(.*)$|	at .*(.*)|^$" $FILE_NAME > $TRIM_FILE
+fi
 
 {
 echo
@@ -142,6 +202,15 @@ echo -en "${NC}"
 # WFLYUT0008 - UT listener suspending
 {
 egrep "WFLYUT000[6-8]|WFLYSRV005[1-3]" $TRIM_FILE
+echo
+} | tee -a $DEST
+
+echo -en "${BLUE}"
+echo "*** Patch information of $FILE_NAME ***" | tee -a $DEST
+echo -en "${NC}"
+# WFLYPAT0050 - patch information
+{
+egrep "WFLYPAT0050" $TRIM_FILE
 echo
 } | tee -a $DEST
 
