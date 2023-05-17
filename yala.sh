@@ -7,6 +7,11 @@
 #
 # Usage: sh ./yala.sh <SERVER_LOG>
 
+VALID_UPDATE_MODES=(force ask never)
+
+YALA_SH="$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
+YALA_ERRORS="yala-errors.tar.xz"
+
 usage() {
     if [ ! "x$1" = "x" ]; then
         echo
@@ -14,7 +19,7 @@ usage() {
         echo
     fi
     echo "Usage:"
-    echo " sh ./yala.sh <options> <SERVER_LOG>"
+    echo " sh ./$YALA_SH <options> <SERVER_LOG>"
     echo
     echo "Yala is just Yet Another Log Analyzer. It focuses on "
     echo "providing quick JBoss EAP 7+ server log summaries,"
@@ -23,24 +28,61 @@ usage() {
     echo
     echo "Options:"
     echo " -l, --last              analyse the last started JBoss only"
-    echo " -s, --skip              skip checking for updates"
+    echo " -u, --updateMode        the update mode to use, one of [${VALID_UPDATE_MODES[*]}], default: force"
     echo " -h, --help              show this help" 
 }
 
-OPTS=$(getopt -o 'h,l,s' --long 'help,last,skip' -n 'yala' -- "$@")
+# is_valid_option <argument> <array> <option>
+is_valid_option() {
+    ARGUMENT=$1
+    ARRAY=$2
+    OPTION=$3
+    
+    if [[ ! " ${ARRAY[*]} " =~ " ${ARGUMENT} " ]]; then
+        echo "${YALA_SH}: invalid argument '$ARGUMENT' for option '$OPTION', must be one of [${ARRAY[*]}]"
+        return 22 # -> Invalid Argument
+    else
+        return 0  # -> Success
+    fi
+}
+
+# source a global $HOME/.yala/config if available
+if [ -d $HOME/.yala ] && [ -f $HOME/.yala/config ]; then
+    source $HOME/.yala/config 
+fi
+
+# set required variables with default values, if not set in $HOME/.yala/config
+[ -z $UPDATE_MODE ] && UPDATE_MODE="force"
+[ -z $MD5 ] && MD5="https://raw.githubusercontent.com/aogburn/yala/main/md5"
+[ -z $TAR_MD5 ] && TAR_MD5="https://raw.githubusercontent.com/aogburn/yala/main/tarmd5"
+[ -z $REMOTE_YALA_SH ] && REMOTE_YALA_SH="https://raw.githubusercontent.com/aogburn/yala/main/yala.sh"
+[ -z $REMOTE_YALA_ERRORS ] && REMOTE_YALA_ERRORS="https://raw.githubusercontent.com/aogburn/yala/main/yala-errors.tar.xz"
+
+# parse the cli options
+OPTS=$(getopt -o 'h,l,u:' --long 'help,last,updateMode:' -n "${YALA_SH}" -- "$@")
+
+# if getopt has a returned an error, exit with the return code of getopt
+res=$?; [ $res -gt 0 ] && exit $res
+
 eval set -- "$OPTS"
 unset OPTS
 
 while true; do
     case "$1" in
         '-h'|'--help')
-            usage; exit; shift
+            usage; exit 0; shift
             ;;
         '-l'|'--last')
             LAST_STARTED_ONLY="true"; shift
             ;;
-        '-s'|'--skip')
-            CHECK_UPDATE="false"; shift
+        '-u'|'--updateMode')
+            is_valid_option "$2" "${VALID_UPDATE_MODES[*]}" "-u, --update"
+            result=$?
+            if [ $result -gt 0 ]; then
+                exit $result
+            fi
+            UPDATE_MODE=$2
+            shift 2
             ;;
         '--') shift; break;;
         * )
@@ -51,7 +93,13 @@ while true; do
     esac
 done
 
-# after parsing the options, '$1' must be the file name
+# check if filename is given
+if [ $# -eq 0 ]; then
+    echo "${YALA_SH}: <SERVER_LOG> argument missing."
+    exit 22
+fi
+
+# after parsing the options, '$1' is the file name
 FILE_NAME=$1
 
 EXT=".yala"
@@ -73,39 +121,80 @@ export GREEN='\033[0;32m'
 export YELLOW='\033[1;33m'
 export NC='\033[0m'
 
-# Check for a new yala.sh.  Uncomment next line if you want to avoid this check
-# CHECK_UPDATE="false"
-if [ "x$CHECK_UPDATE" = "x" ]; then
-    echo "Checking script update. Uncomment CHECK_UPDATE in script or run with -s flag if you wish to skip."
-    SUM=`md5sum $DIR/yala.sh | awk '{ print $1 }'`
-    NEWSUM=`curl https://raw.githubusercontent.com/aogburn/yala/main/md5`
-    echo $DIR
-    echo $SUM
-    echo $NEWSUM
+# Check for a new yala.sh and yala-errors.tar.xz if UPDATE_MODE is not 'never'
+if [ "$UPDATE_MODE" != "never" ]; then
+    echo "Checking script update. Use option '-u never' to skip the update check"
+
+    SUM=`md5sum $DIR/$YALA_SH | awk '{ print $1 }'`
+    NEWSUM=$(curl -s $MD5)
+
     if [ "x$NEWSUM" != "x" ]; then
         if [ $SUM != $NEWSUM ]; then
-            echo "Version difference detected.  Downloading new version. Please re-run yatda."
-            wget -q https://raw.githubusercontent.com/aogburn/yala/main/yala.sh -O $DIR/yala.sh
-            exit
+
+            echo
+            echo "$YALA_SH - $SUM - local"
+            echo "$YALA_SH - $NEWSUM - remote"
+
+            if [ "$UPDATE_MODE" = "ask" ]; then
+                while true; do
+                    echo
+                    read -p "A new version of $YALA_SH is available, do you want to update?" yn
+                    case $yn in
+                        [Yy]* ) UPDATE="true"; break;;
+                        [Nn]* ) UPDATE="false"; break;;
+                        * ) echo "Choose yes or no.";;
+                    esac
+                done
+            else
+                UPDATE="true"
+            fi
+
+            if [ "$UPDATE" = "true" ]; then
+                echo "Downloading new version. Please re-run $YALA_SH."
+                wget -q $REMOTE_YALA_SH -O $DIR/$YALA_SH
+                exit
+            fi
         fi
     fi
+
+    echo
     echo "Checking known errors tar update."
-    SUM=`md5sum $DIR/yala-errors.tar.xz | awk '{ print $1 }'`
-    NEWSUM=`curl https://raw.githubusercontent.com/aogburn/yala/main/tarmd5`
-    echo $DIR
-    echo $SUM
-    echo $NEWSUM
+
+    SUM=$(md5sum $DIR/$YALA_ERRORS | awk '{ print $1 }')
+    NEWSUM=$(curl -s $TAR_MD5)
+
     if [ "x$NEWSUM" != "x" ]; then
         if [ "x$SUM" == "x" ]; then
             SUM=0
         fi
         if [ $SUM != $NEWSUM ]; then
-            echo "Version difference detected.  Downloading new tar."
-            wget -q https://raw.githubusercontent.com/aogburn/yala/main/yala-errors.tar.xz -O $DIR/yala-errors.tar.xz
-            tar -xf yala-errors.tar.xz
-            chmod -R 755 $SCRIPTS_DIR
+
+            echo
+            echo "$YALA_ERRORS - $SUM - local"
+            echo "$YALA_ERRORS - $NEWSUM - remote"
+
+            if [ "$UPDATE_MODE" = "ask" ]; then
+                while true; do
+                    echo
+                    read -p "A version difference for $YALA_ERRORS was detected, do you want to update?" yn
+                    case $yn in
+                        [Yy]* ) UPDATE="true"; break;;
+                        [Nn]* ) UPDATE="false"; break;;
+                        * ) echo "Choose yes or no.";;
+                    esac
+                done
+            else
+                UPDATE="true"
+            fi
+
+            if [ "$UPDATE" = "true" ]; then
+                wget -q $REMOTE_YALA_ERRORS -O $DIR/$YALA_ERRORS
+                tar -xf $YALA_ERRORS
+                chmod -R 755 $SCRIPTS_DIR
+            fi
         fi
     fi
+    echo
     echo "Checks complete."
 fi
 
