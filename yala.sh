@@ -234,11 +234,11 @@ echo
 }  | tee -a $DEST
 
 echo -en "${BLUE}"
-echo -e "*** First and last lines of $FILE_NAME ***" | tee -a $DEST
+echo -e "*** First and last timestamped lines of $FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 {
-head -n 1 "$TRIM_FILE"
-tail -n 1 "$TRIM_FILE"
+head -n 500 "$TRIM_FILE" | grep -E "^20[0-9][0-9]\-" | head -n 1
+tail -n 500 "$TRIM_FILE" | grep -E "^20[0-9][0-9]\-" | tail -n 1
 echo
 }  | tee -a $DEST
 
