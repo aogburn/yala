@@ -237,8 +237,8 @@ echo -en "${BLUE}"
 echo -e "*** First and last timestamped lines of $FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 {
-head -n 500 "$TRIM_FILE" | grep -E "^20[0-9][0-9]\-" | head -n 1
-tail -n 500 "$TRIM_FILE" | grep -E "^20[0-9][0-9]\-" | tail -n 1
+head -n 1000 "$TRIM_FILE" | grep -E "^20[0-9][0-9]\-|^[0-2][0-9]:[0-5][0-9]:[0-5][0-9]" | head -n 1
+tail -n 1000 "$TRIM_FILE" | grep -E "^20[0-9][0-9]\-|^[0-2][0-9]:[0-5][0-9]:[0-5][0-9]" | tail -n 1
 echo
 }  | tee -a $DEST
 
