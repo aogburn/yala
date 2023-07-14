@@ -151,7 +151,7 @@ if [ "$UPDATE_MODE" != "never" ]; then
 
             if [ "$UPDATE" = "true" ]; then
                 echo "Downloading new version. Please re-run $YALA_SH."
-                wget -q $REMOTE_YALA_SH -O $DIR/$YALA_SH
+                curl -s $REMOTE_YALA_SH -o $DIR/$YALA_SH
                 exit
             fi
         fi
@@ -188,7 +188,7 @@ if [ "$UPDATE_MODE" != "never" ]; then
             fi
 
             if [ "$UPDATE" = "true" ]; then
-                wget -q $REMOTE_YALA_ERRORS -O $DIR/$YALA_ERRORS
+                curl -s $REMOTE_YALA_ERRORS -o $DIR/$YALA_ERRORS
                 rm -r $ERRORS_DIR
                 tar -xf $YALA_ERRORS
                 chmod -R 755 $SCRIPTS_DIR
