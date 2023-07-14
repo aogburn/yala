@@ -28,6 +28,9 @@ usage() {
     echo
     echo "Options:"
     echo " -l, --last              analyse the last started JBoss only"
+    echo " -c, --config            use a custom config file located in the '\$HOME/.yala/' folder. Values"
+    echo "                         in the provided file take precedence over the default '\$HOME/.yala/config'"
+    echo "                         file and are superseeded by command line options"
     echo " -u, --updateMode        the update mode to use, one of [${VALID_UPDATE_MODES[*]}], default: force"
     echo " -h, --help              show this help" 
 }
@@ -59,7 +62,7 @@ fi
 [ -z $REMOTE_YALA_ERRORS ] && REMOTE_YALA_ERRORS="https://raw.githubusercontent.com/aogburn/yala/main/yala-errors.tar.xz"
 
 # parse the cli options
-OPTS=$(getopt -o 'h,l,u:' --long 'help,last,updateMode:' -n "${YALA_SH}" -- "$@")
+OPTS=$(getopt -o 'h,l,c:,u:' --long 'help,last,config:,updateMode:' -n "${YALA_SH}" -- "$@")
 
 # if getopt has a returned an error, exit with the return code of getopt
 res=$?; [ $res -gt 0 ] && exit $res
@@ -74,6 +77,15 @@ while true; do
             ;;
         '-l'|'--last')
             LAST_STARTED_ONLY="true"; shift
+            ;;
+        '-c'|'--config')
+            if [ -f $HOME/.yala/$2 ]; then
+                source $HOME/.yala/$2
+                shift 2
+            else
+                echo "config file '$2' does not exist in '$HOME/.yala/'"
+                exit 1
+            fi
             ;;
         '-u'|'--updateMode')
             is_valid_option "$2" "${VALID_UPDATE_MODES[*]}" "-u, --update"
