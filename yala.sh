@@ -189,6 +189,7 @@ if [ "$UPDATE_MODE" != "never" ]; then
 
             if [ "$UPDATE" = "true" ]; then
                 wget -q $REMOTE_YALA_ERRORS -O $DIR/$YALA_ERRORS
+                rm -r $ERRORS_DIR
                 tar -xf $YALA_ERRORS
                 chmod -R 755 $SCRIPTS_DIR
             fi
