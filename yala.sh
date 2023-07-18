@@ -29,6 +29,7 @@ usage() {
     echo "Options:"
     echo " -l, --last              analyse the last started JBoss only"
     echo " -u, --updateMode        the update mode to use, one of [${VALID_UPDATE_MODES[*]}], default: force"
+    echo " -t, --threadSplit       split messages to a separate log file for each thread"
     echo " -h, --help              show this help" 
 }
 
@@ -59,7 +60,7 @@ fi
 [ -z $REMOTE_YALA_ERRORS ] && REMOTE_YALA_ERRORS="https://raw.githubusercontent.com/aogburn/yala/main/yala-errors.tar.xz"
 
 # parse the cli options
-OPTS=$(getopt -o 'h,l,u:' --long 'help,last,updateMode:' -n "${YALA_SH}" -- "$@")
+OPTS=$(getopt -o 'h,l,t,u:' --long 'help,last,threadSplit,updateMode:' -n "${YALA_SH}" -- "$@")
 
 # if getopt has a returned an error, exit with the return code of getopt
 res=$?; [ $res -gt 0 ] && exit $res
@@ -74,6 +75,9 @@ while true; do
             ;;
         '-l'|'--last')
             LAST_STARTED_ONLY="true"; shift
+            ;;
+        '-t'|'--threadSplit')
+            THREAD_SPLIT="true"; shift
             ;;
         '-u'|'--updateMode')
             is_valid_option "$2" "${VALID_UPDATE_MODES[*]}" "-u, --update"
@@ -456,6 +460,28 @@ echo -en "${NC}"
 head -n 20 $TMP_FILE2
 cat $TMP_FILE2 >> $ERROR_DEST
 #grep " ERROR \[" $TRIM_FILE | sed 's/^.* ERROR \[.*\] ([^)]*) //g' | sed 's/^.* ERROR \[.*] //g' | sort | uniq -c -w 150 | sort -nr | tee -a $ERROR_DEST
+
+
+#split thread output to separate files
+if [ "$THREAD_SPLIT" == "true" ]; then
+  echo
+  echo "splitting threads to separate log files in $FILE_NAME-yala-threads"
+  rm -r ./$FILE_NAME-yala-threads/ 2> /dev/null
+  mkdir ./$FILE_NAME-yala-threads
+  while IFS= read -r line
+  do
+    # take action on $line #
+    THREAD_NAME=`echo $line | sed -nE 's/^.* [A-Z]+ \[.*\] \(([^)]*)\) .*/\1/p'`
+    if [ "x$THREAD_NAME" != x ]; then
+      THREAD_NAME=`echo $THREAD_NAME | sed -E 's/\///g'`
+      if [ "x$OLD_THREAD_NAME" == "x" ] || [ "$OLD_THREAD_NAME" != "$THREAD_NAME" ]; then
+          OLD_THREAD_NAME="$THREAD_NAME"
+      fi
+    fi
+    echo $line >> "./$FILE_NAME-yala-threads/$OLD_THREAD_NAME.log"
+  done < $TRIM_FILE
+fi
+
 
 #clean up extras
 rm -rf $TRIM_FILE
