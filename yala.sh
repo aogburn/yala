@@ -28,6 +28,9 @@ usage() {
     echo
     echo "Options:"
     echo " -l, --last              analyse the last started JBoss only"
+    echo " -c, --config            use a custom config file located in the '\$HOME/.yala/' folder. Values"
+    echo "                         in the provided file take precedence over the default '\$HOME/.yala/config'"
+    echo "                         file and are superseeded by command line options"
     echo " -u, --updateMode        the update mode to use, one of [${VALID_UPDATE_MODES[*]}], default: force"
     echo " -t, --threadSplit       split messages to a separate log file for each thread"
     echo " -h, --help              show this help" 
@@ -60,7 +63,7 @@ fi
 [ -z $REMOTE_YALA_ERRORS ] && REMOTE_YALA_ERRORS="https://raw.githubusercontent.com/aogburn/yala/main/yala-errors.tar.xz"
 
 # parse the cli options
-OPTS=$(getopt -o 'h,l,t,u:' --long 'help,last,threadSplit,updateMode:' -n "${YALA_SH}" -- "$@")
+OPTS=$(getopt -o 'h,l,t,c:,u:' --long 'help,last,threadSplit,config:,updateMode:' -n "${YALA_SH}" -- "$@")
 
 # if getopt has a returned an error, exit with the return code of getopt
 res=$?; [ $res -gt 0 ] && exit $res
@@ -78,6 +81,15 @@ while true; do
             ;;
         '-t'|'--threadSplit')
             THREAD_SPLIT="true"; shift
+            ;;
+        '-c'|'--config')
+            if [ -f $HOME/.yala/$2 ]; then
+                source $HOME/.yala/$2
+                shift 2
+            else
+                echo "config file '$2' does not exist in '$HOME/.yala/'"
+                exit 1
+            fi
             ;;
         '-u'|'--updateMode')
             is_valid_option "$2" "${VALID_UPDATE_MODES[*]}" "-u, --update"
@@ -155,7 +167,7 @@ if [ "$UPDATE_MODE" != "never" ]; then
 
             if [ "$UPDATE" = "true" ]; then
                 echo "Downloading new version. Please re-run $YALA_SH."
-                wget -q $REMOTE_YALA_SH -O $DIR/$YALA_SH
+                curl -s $REMOTE_YALA_SH -o $DIR/$YALA_SH
                 exit
             fi
         fi
@@ -192,7 +204,8 @@ if [ "$UPDATE_MODE" != "never" ]; then
             fi
 
             if [ "$UPDATE" = "true" ]; then
-                wget -q $REMOTE_YALA_ERRORS -O $DIR/$YALA_ERRORS
+                curl -s $REMOTE_YALA_ERRORS -o $DIR/$YALA_ERRORS
+                rm -r $ERRORS_DIR
                 tar -xf $YALA_ERRORS
                 chmod -R 755 $SCRIPTS_DIR
             fi
