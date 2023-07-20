@@ -12,7 +12,7 @@ tar -xf yala-errors.tar.xz
 
 # updating 
 
-When run, yala will look for a new version to use and update itself with a simple wget if so. This update check can be omitted by using the option '-u, --updateMode' with either the value 'never' (no update check is being performed) or 'ask' (the user is asked to update if a new version is found). The script may be updated over time with new helpful checks, stats, or known issue searches.
+When run, yala will look for a new version to use and update itself with a simple curl if so. This update check can be omitted by using the option `-u, --updateMode` with either the value `never` (no update check is being performed) or `ask` (the user is asked to update if a new version is found). The script may be updated over time with new helpful checks, stats, or known issue searches.
 
 # usage
 
@@ -23,6 +23,9 @@ When run, yala will look for a new version to use and update itself with a simpl
 * Options:
 ```
  -l, --last              analyse the last started JBoss only
+ -c, --config            use a custom config file located in the $HOME/.yala/ folder. Values
+                         in the provided file take precedence over the default $HOME/.yala/config
+                         file and are superseeded by command line options
  -u, --updateMode        the update mode to use, one of [force ask never], default: force
  -h, --help              show this help
 ```
