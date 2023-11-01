@@ -117,16 +117,20 @@ fi
 
 # after parsing the options, '$1' is the file name
 FILE_NAME=$1
+FILE_PREFIX="file://"
+FULL_FILE_NAME=$FILE_PREFIX`readlink -f $FILE_NAME`
 
 EXT=".yala"
 TRIM_FILE="$FILE_NAME$EXT-trim"
 TMP_FILE="$FILE_NAME$EXT-tmp"
 TMP_FILE2="$FILE_NAME$EXT-tmp2"
 DEST=$1$EXT
+FULL_DEST=$FULL_FILE_NAME$EXT
 ERROR_EXT="$EXT-errors"
 LAST_FILE="$FILE_NAME.lastOnly"
 
 export ERROR_DEST=$1$ERROR_EXT
+FULL_ERROR_DEST=$FULL_FILE_NAME$ERROR_EXT
 DIR=`dirname "$(readlink -f "$0")"`
 ERRORS_DIR="$DIR/yala-errors/"
 SCRIPTS_DIR="$DIR/condition-scripts/"
@@ -226,8 +230,8 @@ fi
 
 #Summarize info
 echo
-echo -e "${RED}### Summarizing $FILE_NAME - see $DEST for more info and $ERROR_DEST for critical error suggestions ###${NC}"
-echo "### Summary of $FILE_NAME ###" > $DEST
+echo -e "${RED}### Summarizing $FULL_FILE_NAME - see $FULL_DEST for more info and $FULL_ERROR_DEST for critical error suggestions ###${NC}"
+echo "### Summary of $FULL_FILE_NAME ###" > $DEST
 
 if [ ! -z $LAST_STARTED_ONLY ]; then
 
@@ -251,7 +255,7 @@ echo
 }  | tee -a $DEST
 
 echo -en "${BLUE}"
-echo -e "*** First and last timestamped lines of $FILE_NAME ***" | tee -a $DEST
+echo -e "*** First and last timestamped lines of $FULL_FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 {
 head -n 1000 "$TRIM_FILE" | grep -E "^20[0-9][0-9]\-|^[0-2][0-9]:[0-5][0-9]:[0-5][0-9]" | head -n 1
@@ -261,7 +265,7 @@ echo
 
 
 echo -en "${BLUE}"
-echo -e "*** VM args and info of $FILE_NAME ***" | tee -a $DEST
+echo -e "*** VM args and info of $FULL_FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 {
 grep "java.runtime.name =" $TRIM_FILE | uniq
@@ -275,7 +279,7 @@ echo
 
 
 echo -en "${BLUE}"
-echo -e "*** Start and stop events of $FILE_NAME ***" | tee -a $DEST
+echo -e "*** Start and stop events of $FULL_FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 
 # WFLYSRV0025 - started
@@ -300,7 +304,7 @@ echo
 } | tee -a $DEST
 
 echo -en "${BLUE}"
-echo "*** Notable ports of $FILE_NAME ***" | tee -a $DEST
+echo "*** Notable ports of $FULL_FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 # WFLYSRV005[1-3] - admin console port
 # WFLYSRV006[1-3] - http console port
@@ -313,7 +317,7 @@ echo
 } | tee -a $DEST
 
 echo -en "${BLUE}"
-echo "*** Patch information of $FILE_NAME ***" | tee -a $DEST
+echo "*** Patch information of $FULL_FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 # WFLYPAT0050 - patch information
 {
@@ -323,7 +327,7 @@ echo
 
 
 echo -en "${BLUE}"
-echo "*** Deployment activity of $FILE_NAME ***" | tee -a $DEST
+echo "*** Deployment activity of $FULL_FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 # WFLYSRV0007 - undeploy rolled back with failure
 # WFLYSRV0008 - undeploy rolled back with no failure
@@ -355,7 +359,7 @@ echo
 
 
 echo -en "${BLUE}"
-echo "*** Application context registrations of $FILE_NAME ***" | tee -a $DEST
+echo "*** Application context registrations of $FULL_FILE_NAME ***" | tee -a $DEST
 echo -en "${NC}"
 # WFLYUT0021 - register
 # WFLYUT0022 - unregister
@@ -368,7 +372,7 @@ echo
 
 #Summarize ERRORS
 echo -en "${RED}"
-echo "### ERROR Summary of $FILE_NAME ###" | tee $ERROR_DEST
+echo "### ERROR Summary of $FULL_FILE_NAME ###" | tee $ERROR_DEST
 echo | tee -a $ERROR_DEST
 echo -en "${NC}"
 
@@ -467,8 +471,8 @@ ERROR_COUNT=`cat $TMP_FILE | wc -l`
 cat $TMP_FILE | sort | uniq -c -w 150 | sort -nr > $TMP_FILE2
 UNIQUE_COUNT=`cat $TMP_FILE2 | wc -l`
 echo -en "${BLUE}"
-echo "*** Counts of other errors in $FILE_NAME - $ERROR_COUNT total error occurrences of $UNIQUE_COUNT unique error types ***" | tee -a $ERROR_DEST
-echo "*** top 20 - see $ERROR_DEST for more ***"
+echo "*** Counts of other errors in $FULL_FILE_NAME - $ERROR_COUNT total error occurrences of $UNIQUE_COUNT unique error types ***" | tee -a $ERROR_DEST
+echo "*** top 20 - see $FULL_ERROR_DEST for more ***"
 echo -en "${NC}"
 head -n 20 $TMP_FILE2
 cat $TMP_FILE2 >> $ERROR_DEST
