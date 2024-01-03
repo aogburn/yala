@@ -8,10 +8,12 @@ Your log shows you are hitting "Too many open files" errors, which would cause u
 
 Logout the user and restart any process the user is running for this change to take effect.  If you continue to see this with increased open file limits, a file leak could be possible.  In case of any recurrence, please capture the following:
 
--output of the following commands:
+-output of the following commands as the JBoss user:
 
-# lsof -p <pid> > lsof.out
-# netstat -vatnp > netstat.out
+$ lsof -p <pid> > lsof.out
+$ netstat -vatnp > netstat.out
+$ cat /proc/$JBOSS_PID/limits > limits.out
+$ ulimit -a > ulimit.out
 
 -Garbage collection logging, which you can enable as explained in https://access.redhat.com/solutions/18656
 
