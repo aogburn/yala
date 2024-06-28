@@ -1,4 +1,4 @@
-java.lang.OutOfMemoryError: unable to create new native thread
+java.lang.OutOfMemoryError: unable to create( new)* native thread
 https://access.redhat.com/solutions/18064
 I see you are receiving 'java.lang.OutOfMemoryError: unable to create new native thread' errors.  Essentially, this error occurs because the JVM is unable to create a new thread.  This causes unexpected failures and possible unresponsiveness from a failure to create new threads to process new tasks or requests.  This typically stems from the OS nproc limit being reached.  You may simply need to increase the user's nproc ulimit for your configuration and application requirements so if this is frequently recurring, you may consider increasing this limit first for possible improvement.
 
