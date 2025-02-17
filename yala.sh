@@ -122,6 +122,10 @@ FULL_FILE_NAME=$FILE_PREFIX`readlink -f $FILE_NAME`
 
 EXT=".yala"
 TRIM_FILE="$FILE_NAME$EXT-trim"
+FULL_STUCK_FILE="$FILE_NAME$EXT-full-stuck"
+STUCK_FILE="$FILE_NAME$EXT-stuck"
+STUCK_TIME_FILE="$STUCK_FILE-time"
+COMPLETED_STUCK_FILE="$STUCK_FILE-completed"
 TMP_FILE="$FILE_NAME$EXT-tmp"
 TMP_FILE2="$FILE_NAME$EXT-tmp2"
 DEST=$1$EXT
@@ -462,6 +466,57 @@ else
 fi
 
 
+# Summarize stuck threads
+# UT005072 - stuck thread
+# UT005073 - stuck thread complete
+grep UT005072 -A 30 $FILE_NAME > $FULL_STUCK_FILE
+grep UT005072 $FULL_STUCK_FILE > $STUCK_FILE
+STUCK_COUNT=`cat $STUCK_FILE | wc -l`
+echo -en "${BLUE}"
+echo "*** Stuck thread summary ***" | tee -a $DEST
+echo -en "${RED}"
+echo " * Stuck request occurrences: $STUCK_COUNT" | tee -a $DEST
+if [ $STUCK_COUNT -gt 0 ]; then
+    grep UT005073 $TRIM_FILE > $COMPLETED_STUCK_FILE
+    COMPLETED_STUCK_COUNT=`cat $COMPLETED_STUCK_FILE | wc -l`
+    {
+    echo " * Stuck requests that completed: $COMPLETED_STUCK_COUNT"
+    echo " * Likely remaining incomplete request count: $(( $STUCK_COUNT-$COMPLETED_STUCK_COUNT < 0? 0 : $STUCK_COUNT-$COMPLETED_STUCK_COUNT ))"
+
+    PEAK_STUCK_COUNT=`cat $STUCK_FILE | sed -E 's/.*are (.*) thread.*/\1/g' | sort -nr | head -n1`
+    echo " * Peak stuck request count: $PEAK_STUCK_COUNT stuck requests"
+    PEAK_STUCK_COUNT_STRING="are $PEAK_STUCK_COUNT thread"
+    grep "$PEAK_STUCK_COUNT_STRING" $STUCK_FILE | head -n 5
+
+    cat $COMPLETED_STUCK_FILE | sed -E 's/.*active for approximately (.*) milliseconds.*/\1/g' > $STUCK_TIME_FILE
+    AVG_STUCK_TIME=`cat $STUCK_TIME_FILE | awk '{sum += $1; n++} END {print sum / n}'`
+    echo " * Average request stuck time: $AVG_STUCK_TIME ms"
+
+    PEAK_STUCK_TIME=`cat $STUCK_TIME_FILE | sort -nr | head -n 1`
+    echo " * Longest request stuck time: $PEAK_STUCK_TIME ms"
+    grep "$PEAK_STUCK_TIME" $COMPLETED_STUCK_FILE
+
+    echo " * First and last stuck request occurrence:"
+    head -n 1 $STUCK_FILE
+    tail -n 1 $STUCK_FILE
+
+    echo " * First and last stuck reqeust completion:"
+    head -n 1 $COMPLETED_STUCK_FILE
+    tail -n 1 $COMPLETED_STUCK_FILE
+
+    echo " * Stuck request URIs:"
+    cat $STUCK_FILE | sed -E 's/.*same request for (.*) and may be stuck \(.*/\1/g' | sort | uniq -c | sort -nr | head -n 20
+
+    echo " * Stuck request top line:"
+    grep "UT005072" -A 1 $FULL_STUCK_FILE | grep $'\tat' | sed -E 's/.*\tat (.*)/\1/g' | sort | uniq -c | sort -nr
+
+    echo " * Stuck request stack summary of top 30 lines:"
+    grep $'\tat' $FULL_STUCK_FILE | sed -E 's/.*\tat (.*)/\1/g' | sort | uniq -c | sort -nr | head -n 45
+    } | tee -a $DEST
+fi
+echo -en "${NC}"
+echo | tee -a $DEST
+
 # parse out ERROR strings stripped of categories and threads
 #grep " ERROR \[" $TRIM_FILE | sed 's/^.* ERROR \[.*\] ([^)]*) //g' | sed 's/^.* ERROR \[.*] //g' > $TMP_FILE
 grep " ERROR \[" $TRIM_FILE | sed -E 's/^.* ERROR \[(.*)\] \([^)]*\) /[\1] /g' | sed -E 's/^.* ERROR \[(.*)] /[\1] /g' > $TMP_FILE
@@ -504,3 +559,7 @@ fi
 rm -rf $TRIM_FILE
 rm -rf $TMP_FILE
 rm -rf $TMP_FILE2
+rm -rf $FULL_STUCK_FILE
+rm -rf $STUCK_FILE
+rm -rf $STUCK_TIME_FILE
+rm -rf $COMPLETED_STUCK_FILE
