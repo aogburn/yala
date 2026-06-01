@@ -1,4 +1,4 @@
-java.lang.OutOfMemoryError: Direct buffer memory
+java.lang.OutOfMemoryError: (Direct buffer memory|Cannot reserve [1-9]+ bytes of direct buffer memory)
 https://access.redhat.com/solutions/3266771
 I see you are receiving 'java.lang.OutOfMemoryError: Direct buffer memory' errors which indicates your direct buffer space is being exhausted.  This could just be a need for a direct buffer limit or a legitimate buffer leak.  In this OOME condition, the JVM may throw constant garbage collection, producing high CPU and virtually constant long pause times, yielding any applications the JVM is running unresponsive.
 
@@ -6,12 +6,12 @@ You may consider increasing the -XX:MaxDirectMemorySize JVM option as memory all
 
 -Garbage collection logging, which you can enable as explained in https://access.redhat.com/solutions/18656
 
--A heap dump, which you can capture as explained in https://access.redhat.com/solutions/21109.  We always recommend setting the -XX:+HeapDumpOnOutOfMemoryError JVM flag to create a heap dump automatically when an OOME occurs.  But note this OOME will require a manual dump,  which you can capture with your JDK's jmap command per https://access.redhat.com/solutions/21109#jmapjavaprocess:
+-A heap dump, which you can capture as explained in https://access.redhat.com/solutions/21109.  We always recommend setting the -XX:+HeapDumpOnOutOfMemoryError JVM flag to create a heap dump automatically when an OOME occurs.  But note this OOME will require a manual dump,  which you can capture with your JDK's jmap command per https://access.redhat.com/solutions/21109#jmapjavaprocess. Note this should be run as the same user as the java process (not root):
 
     jmap -dump:format=b,file=heap.hprof JAVA_PID
 
 
-Please compress the file and include the case number in the file name.  If the JVM is not responding to that as well in the issue time, please attempt it with the -F flag added:
+If the JVM is not responding to that as well in the issue time, please attempt it with the -F flag added:
 
     jmap -F -dump:format=b,file=heap.hprof JAVA_PID
 
