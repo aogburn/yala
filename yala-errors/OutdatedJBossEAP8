@@ -1,7 +1,7 @@
 WFLYSRV00(49|50): JBoss EAP 8\.0
 https://access.redhat.com/support/policy/updates/jboss_notes
-Also, note 8.0 update 12 is the final 8.0 patch update so EAP 8.0 will be falling increasingly behind on fixes as maintenance updates have now fully shifted to EAP 8.1.  So EAP 8.0 is not recommended for use as it will have a number of growing open vulnerabilities and unresolved bugs.  We would recommend an upgrade to 8.1 update 6.1 soon for the latest and to be in position to absorb ongoing fixes from later 8.1 patch updates:
+Also, note 8.0 update 12 is the final 8.0 patch update so EAP 8.0 will be falling increasingly behind on fixes as maintenance updates have now fully shifted to EAP 8.1.  So EAP 8.0 is not recommended for use as it will have a number of growing open vulnerabilities and unresolved bugs.  We would recommend an upgrade to 8.1 update 7 soon for the latest and to be in position to absorb ongoing fixes from later 8.1 patch updates:
 
 8.1: https://access.redhat.com/downloads/content/application-services/appplatform/8.1/JBEAP-8.1.0/jboss-eap-8.1.0.zip
-8.1 update 6.1: https://access.redhat.com/downloads/content/application-services/appplatform/8.1/JBEAP-8.1.6.1/jboss-eap-8.1.6.1-runtime-maven-repository.zip
+8.1 update 7: https://access.redhat.com/downloads/content/application-services/appplatform/8.1/JBEAP-8.1.7/jboss-eap-8.1.7-maven-repository.zip
 
