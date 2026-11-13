@@ -4,6 +4,7 @@ You are using an outdated EAP version that is now end of life and not eligible f
 
 7.4.0: https://access.redhat.com/jbossnetwork/restricted/softwareDetail.html?softwareId=99481
 7.4.23: https://access.redhat.com/jbossnetwork/restricted/softwareDetail.html?softwareId=108041
+Latest 7.4 ELS update (7.4.26): https://access.redhat.com/downloads/content/1023/ver=/middleware---7/7.4.26/x86_64/product-software
 
 
 Otherwise if not pursuing ELS, please upgrade to EAP 8 for continued support.
